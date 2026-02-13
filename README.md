@@ -1,6 +1,6 @@
 # Wavelet–Frequency Fusion Based Diffusion Model for Underwater Image Enhancement and Restoration
 
-Yun Zhang,Yushen Zhenga,Maowei Zeng,Ping Li*,Huanwen Wang*
+Yun Zhang,Yushen Zheng,Maowei Zeng,Ping Li,Huanwen Wang*
 
 <hr />
 
