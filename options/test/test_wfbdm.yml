@@ -1,0 +1,70 @@
+# general settings for image SR training
+name: WFBDM
+model_type: WFBDMModel
+scale: 1
+num_gpu: 1
+manual_seed: 10
+
+# dataset and data loader settings
+datasets:
+  test_1:
+    name: LSUI
+    type: PairedImageDataset
+    dataroot_gt: ../LSUI-new1/test/GT
+    dataroot_lq: ../LSUI-new1/test/input
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+
+network_g:
+  type: DRFDCx2
+  in_channel: 6
+  out_channel: 3
+  inner_channel: 48
+  norm_groups: 24
+  with_time_emb: true
+  schedule_opt:
+    schedule: linear
+    n_timestep: 2000
+    linear_start: !!float 1e-6
+    linear_end: !!float 1e-2
+  sample_proc: ddim
+  local_ensemble: true
+  feat_unfold: true
+  cell_decode: true
+  ppg_input_channels: 3
+
+
+path:
+  pretrain_network_g: ./basicsr/models/net_g_1670000.pth
+  strict_load_g: true
+
+# validation settings
+val:
+  save_img: true
+  suffix: ~
+  save_phy: false
+
+  metrics:
+    psnr: # metric name, can be arbitrary
+      type: calculate_psnr
+      crop_border: 2
+      test_y_channel: true
+    ssim:
+      type: calculate_ssim
+      crop_border: 2
+      test_y_channel: true
+    lpips:
+      type: calculate_lpips
+      crop_border: 2
+      test_y_channel: true
+    uiqm:
+      type: calculate_uiqm
+      crop_border: 2
+      test_y_channel: true
+
+    uciqe:
+      type: calculate_uciqe
+      crop_border: 2
+      test_y_channel: true
+    

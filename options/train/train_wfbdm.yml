@@ -1,0 +1,147 @@
+# CMD:
+# basicsr/train.py -opt options/train/train_wfbdm.yml
+
+name: WFBDM-train-UIEB-bs16
+model_type: WFBDMModel
+scale: 1
+num_gpu: 1
+manual_seed: 10
+
+# dataset and data loader settings
+datasets:
+  train:
+    task: UIE
+    name: LSUI
+    type: PairedImageDataset
+    dataroot_gt: ../LSUI-new1/train/GT
+    dataroot_lq: ../LSUI-new1/train/input
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+
+    gt_size: 128
+    use_hflip: true
+    use_rot: true
+
+    # data loader
+    use_shuffle: true
+    num_worker_per_gpu: 1
+    batch_size_per_gpu: 1
+    dataset_enlarge_ratio: 100
+    prefetch_mode: ~
+
+  val:
+    name: LSUI
+    type: PairedImageDataset
+    dataroot_gt: ../LSUI-new1/train/GT
+    dataroot_lq: ../LSUI-new1/train/input
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+
+# network structures
+network_g:
+  type: DRFDCx2
+  in_channel: 6
+  out_channel: 3
+  inner_channel: 48
+  norm_groups: 24
+  with_time_emb: true
+  schedule_opt:
+    schedule: linear
+    n_timestep: 2000
+    linear_start: !!float 1e-6
+    linear_end: !!float 1e-2
+  sample_proc: ddim
+  local_ensemble: true
+  feat_unfold: true
+  cell_decode: true
+  ppg_input_channels: 3
+
+# path
+path:
+  pretrain_network_g: ~
+  strict_load_g: true
+  resume_state: ~
+
+# training settings
+train:
+  optim_g:
+    type: Adam
+    lr: !!float 1e-4
+    weight_decay: 0.0001
+    betas: [0.9, 0.999]
+
+  scheduler:
+    type: MultiStepLR
+    milestones: [250000, 400000, 450000, 475000]
+    gamma: 0.5
+
+  total_iter: 2000000
+  warmup_iter: 10000  # warm up
+
+  # losses
+  Rec_loss:
+    type: L1Loss
+    loss_weight: 6.0
+    reduction: mean
+  mse_loss:
+    type: MSELoss
+    loss_weight: 1.0
+    reduction: mean
+  ssim_loss:
+    type: SSIMLoss
+    loss_weight: 2.0
+    crop_border: 2
+    test_y_channel: true
+  amp_loss:
+    type: AFFTLoss
+    loss_weight: 0.5
+    reduction: mean
+  high_loss:
+    type: MSELoss
+    loss_weight: 0.5
+    reduction: mean
+  diff_loss:
+    type: L1Loss
+    loss_weight: 0.3
+    reduction: mean
+
+# validation settings
+val:
+  val_freq: !!float 2000
+  #val_freq: !!float 1
+  save_img: false
+
+  metrics:
+    psnr: # metric name, can be arbitrary
+      type: calculate_psnr
+      crop_border: 2
+      test_y_channel: true
+    ssim:
+      type: calculate_ssim
+      crop_border: 2
+      test_y_channel: true
+    # lpips:
+    #   type: calculate_lpips
+    #   crop_border: 2
+    #   test_y_channel: true
+    
+
+# logging settings
+logger:
+  print_freq: 500
+  save_checkpoint_freq: !!float 2000
+  use_tb_logger: true
+  wandb:
+    project: ~
+    resume_id: ~
+
+# dist training settings
+dist:
+  find_unused_parameters: true
+dist_params:
+  backend: nccl
+  port: 29500
+
+
